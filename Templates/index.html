@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profit Prediction</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use Inter font family for a clean look -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffe6e6; /* Light reddish-pink background */
+        }
+    </style>
+</head>
+<body class="bg-[#F05941] min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 md:p-12 w-full max-w-2xl transform transition-transform duration-500 hover:scale-105">
+
+        <!-- Header Section -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-[#A94438] mb-2">Profit Prediction</h1>
+            <p class="text-lg text-gray-600">Enter the startup's financial details to predict the profit.</p>
+        </div>
+
+        <!-- Prediction Form -->
+        <form id="prediction-form" class="space-y-6">
+
+            <!-- R&D Spend Input -->
+            <div>
+                <label for="rd_spend" class="block text-sm font-medium text-gray-700">R&D Spend</label>
+                <div class="mt-1">
+                    <input type="number" step="any" id="rd_spend" name="rd_spend" placeholder="e.g., 160259.07" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#A94438] focus:border-transparent transition duration-300">
+                </div>
+            </div>
+
+            <!-- Administration Spend Input -->
+            <div>
+                <label for="admin_spend" class="block text-sm font-medium text-gray-700">Administration Spend</label>
+                <div class="mt-1">
+                    <input type="number" step="any" id="admin_spend" name="admin_spend" placeholder="e.g., 136897.80" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#A94438] focus:border-transparent transition duration-300">
+                </div>
+            </div>
+
+            <!-- Marketing Spend Input -->
+            <div>
+                <label for="marketing_spend" class="block text-sm font-medium text-gray-700">Marketing Spend</label>
+                <div class="mt-1">
+                    <input type="number" step="any" id="marketing_spend" name="marketing_spend" placeholder="e.g., 471784.10" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#A94438] focus:border-transparent transition duration-300">
+                </div>
+            </div>
+
+            <!-- State Dropdown -->
+            <div>
+                <label for="state" class="block text-sm font-medium text-gray-700">State</label>
+                <div class="mt-1">
+                    <select id="state" name="state" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#A94438] focus:border-transparent transition duration-300">
+                        <option value="">Select a state</option>
+                        <option value="0">New York</option>
+                        <option value="1">California</option>
+                        <option value="2">Florida</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit"
+                    class="w-full py-3 px-4 bg-[#FF7F50] text-white font-semibold rounded-lg shadow-md hover:bg-[#FF6347] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#A94438] transition duration-300 transform hover:-translate-y-1">
+                Predict Profit
+            </button>
+        </form>
+
+        <!-- Result Display Section -->
+        <div id="result-container" class="mt-8 text-center hidden">
+            <h2 class="text-xl md:text-2xl font-semibold text-gray-800">Predicted Profit:</h2>
+            <p id="prediction-result" class="text-3xl md:text-5xl font-extrabold text-[#A94438] mt-2"></p>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="mt-8 text-center hidden">
+            <div class="animate-spin inline-block w-8 h-8 border-4 border-[#A94438] border-t-transparent rounded-full"></div>
+            <p class="mt-2 text-gray-600">Calculating...</p>
+        </div>
+
+        <!-- Error Message Container -->
+        <div id="error-message" class="mt-8 text-center text-red-500 hidden">
+            <p>An error occurred. Please try again.</p>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center text-sm text-gray-500 mt-8">
+            <p>Project by Hitesh Bachale</p>
+        </div>
+
+    </div>
+
+    <script>
+        // Get references to all necessary elements
+        const form = document.getElementById('prediction-form');
+        const resultContainer = document.getElementById('result-container');
+        const predictionResult = document.getElementById('prediction-result');
+        const loadingIndicator = document.getElementById('loading');
+        const errorMessage = document.getElementById('error-message');
+
+        // Function to handle form submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault(); // Prevent default form submission
+
+            // Hide previous results and errors
+            resultContainer.classList.add('hidden');
+            errorMessage.classList.add('hidden');
+            loadingIndicator.classList.remove('hidden');
+
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
+            // Convert numeric values from string to number
+            data.rd_spend = parseFloat(data.rd_spend);
+            data.admin_spend = parseFloat(data.admin_spend);
+            data.marketing_spend = parseFloat(data.marketing_spend);
+            data.state = parseInt(data.state);
+
+            try {
+                // Send a POST request to the Flask backend
+                const response = await fetch('http://127.0.0.1:5000/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                });
+
+                // Check if the response is successful
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                // Display the prediction result, formatted to two decimal places
+                predictionResult.textContent = `$${result.predicted_profit.toFixed(2)}`;
+                resultContainer.classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Prediction failed:', error);
+                errorMessage.classList.remove('hidden');
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
